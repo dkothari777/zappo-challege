@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Zappos Tech-Connect Coding Challenge">
+    <meta name="author" content="Chris Weiss">
+    <link rel="shortcut icon" href="favicon.ico">
+
+    <title>Coding Challenge - Following in Turing's Footsteps</title>
+
+
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+
+    <style>
+        .vert-sep { margin-top: 35px }
+    </style>
+</head>
+
+<body role="document">
+
+<!-- Fixed navbar -->
+<div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+    <div class="container">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="#">Following in Turing's Footsteps</a>
+        </div>
+    </div>
+</div>
+
+<div class="container theme-showcase" role="main">
+
+<div class="jumbotron">
+    <h1>Following in Turing's Footsteps</h1>
+</div>
+
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<a name="introduction"></a>
+<div class="well">
+    <h2>Introduction</h2>
+    <p>
+        Those pesky Nazis are at it again.  In a continuing effort to win World War II, they have devised an improved way of sending
+        secret messages to their forces in the field.  Using <a href="http://en.wikipedia.org/wiki/Steganography">steganography</a>, they
+        are hiding <a href="http://en.wikipedia.org/wiki/Enigma_machine">Enigma</a> encrypted messages within images
+        and sending them via email (yeah, who knew they had that back in WWII?!?!).
+    </p>
+
+</div>
+
+<a name="problem"></a>
+<div class="well">
+    <h2>Your Mission</h2>
+
+    <p>You have intercepted one of these emails, containing the image below, and must race against time to uncover (decrypt) their plot!</p>
+
+    <img class="center-block" src="uofa_challenge.bmp" alt="The source image" title="The source image" />
+
+    <p>The mission takes the form of two phases:</p>
+</div>
+
+    <div class="well">
+
+
+    <h3>Phase I</h3>
+
+    <p>Start by downloading the above image to your machine.  To ensure that the file is not corrupt, you can verify its MD5 (<b>2989461ca573cbfb67e2cb1e90d58dcf</b>).</p>
+
+    <p>
+        The first step is to extract the encrypted message from the image data.  The image is a 24bit <a href="http://en.wikipedia.org/wiki/BMP_file_format">bitmap</a>.
+        The 24-bit pixel format stores 1 pixel value per 3 bytes. Each pixel value defines the blue, green and red, 8-bits per each sample.
+        Data is hidden in the image by manipulating the <a href="http://en.wikipedia.org/wiki/Least_significant_bit">LSB</a> of each of those
+        sample bytes.  This results in the hiding of 3 bits per pixel - an essentially undetectable change to the image when viewed.
+    </p>
+
+    <p>Keep in mind that all data is stored in Big-endian byte order.</p>
+
+        <hr class="vert-sep"/>
+
+
+        <p>To help you on your way, the pixel array can be found here in the data stream:</p>
+
+    <table class="table table-striped">
+        <tr>
+            <th>Offset</th>
+            <th>Size</th>
+            <th>Notes</th>
+        </tr>
+        <tbody>
+        <tr>
+            <td>54</td>
+            <td>151,164 bytes</td>
+            <td>Pixel array (image data)</td>
+        </tr>
+        </tbody>
+    </table>
+
+        <hr class="vert-sep"/>
+
+    <h4>Reading the data</h4>
+
+    <p>Start by gathering all of the LSBs from the pixel array.</p>
+
+    <p>To ensure that you have collected the data correctly, and thus complete phase one, the following should be true of your collected bits:</p>
+
+    <table  class="table table-striped">
+        <tr>
+            <th>Offset</th>
+            <th>Size</th>
+            <th>Notes</th>
+        </tr>
+        <tbody>
+        <tr>
+            <td>0</td>
+            <td>4 bytes</td>
+            <td>Length of hidden data, excluding this value (signed int)</td>
+        </tr>
+        <tr>
+            <td>4</td>
+            <td>(len-3) bytes</td>
+            <td>The message payload (all ascii characters)</td>
+        </tr>
+        <tr>
+            <td>4+(len-3)</td>
+            <td>3 bytes</td>
+            <td>"EOL", or the hex values 45,4F,4C</td>
+        </tr>
+        </tbody>
+    </table>
+
+        <hr class="vert-sep"/>
+
+        <p>If the last 3 bytes of your recovered data equal "EOL", then you have successfully completed Phase I!</p>
+
+        </div>
+    <div class="well">
+
+
+    <h3>Phase II</h3>
+
+    <p>Now it's time to decrypt the secret Nazi plans!  Fortunately for us, the workings of the Enigma machine have been known for
+        quite awhile - and this is a simplified version at that.  All the parts and settings for the Enigma machine are within the
+        hidden data - we just need to reassemble them and decrypt the message.  The parts are as follows:</p>
+
+    <table class="table table-striped">
+        <tr>
+            <th>Offset</th>
+            <th>Size</th>
+            <th>Notes</th>
+        </tr>
+        <tbody>
+        <tr>
+            <td>0</td>
+            <td>94 bytes</td>
+            <td>Static Wheel (94 ascii characters)</td>
+        </tr>
+        <tr>
+            <td>94</td>
+            <td>94 bytes</td>
+            <td>Reflector (47 pairs of ascii characters)</td>
+        </tr>
+        <tr>
+            <td>188</td>
+            <td>94 bytes</td>
+            <td>Rotor I (94 ascii characters)</td>
+        </tr>
+        <tr>
+            <td>282</td>
+            <td>94 bytes</td>
+            <td>Rotor II (94 ascii characters)</td>
+        </tr>
+        <tr>
+            <td>376</td>
+            <td>94 bytes</td>
+            <td>Rotor III (94 ascii characters)</td>
+        </tr>
+        <tr>
+            <td>470</td>
+            <td>1 byte</td>
+            <td>Rotor I Notch (ascii character)</td>
+        </tr>
+        <tr>
+            <td>471</td>
+            <td>1 byte</td>
+            <td>Rotor II Notch (ascii character)</td>
+        </tr>
+        <tr>
+            <td>472</td>
+            <td>1 byte</td>
+            <td>Rotor I Starting Position (ascii character)</td>
+        </tr>
+        <tr>
+            <td>473</td>
+            <td>1 byte</td>
+            <td>Rotor II Starting Position (ascii character)</td>
+        </tr>
+        <tr>
+            <td>474</td>
+            <td>1 byte</td>
+            <td>Rotor III Starting Position (ascii character)</td>
+        </tr>
+        <tr>
+            <td>475</td>
+            <td>((len-475)-3) bytes</td>
+            <td>Encrypted message data</td>
+        </tr>
+        </tbody>
+    </table>
+
+        <hr class="vert-sep"/>
+
+
+        <h4>Basic Operation</h4>
+
+    <p>The basic Enigma Machine worked as shown in the following diagram:</p>
+
+    <img src="enigma-diagram.png" alt="Enigma Machine" title="Enigma Machine" />
+
+        <hr class="vert-sep"/>
+
+        <p>Our machine will not use a plugboard, but we will be using 94 characters instead of the original 26 uppercase.</p>
+
+    <p>Imagine the pieces of our machine (taken from the hidden data), lined up just as they are in the above image.  </p>
+
+    <p>Let's take the following simplified example (only using 26 characters), with Rotor I being the right wheel and Rotor III being the left wheel:</p>
+
+    <table  class="table table-striped">
+        <tr>
+            <td>Rotor I:</td>
+            <td>ABCDEFGHIJKLMNOPQRSTUVWXYZ</td>
+            <td>(Static Side)</td>
+            </tr>
+        <tr>
+            <td>&nbsp;</td>
+            <td>MOYWDLZCFHVXQATPEKUJNGBRSI</td>
+            <td>(Scrambler Side)</td>
+        </tr>
+        <tr><td>Rotor II: </td>
+        <td>ABCDEFGHIJKLMNOPQRSTUVWXYZ</td>
+        <td>(Static Side)</td></tr>
+        <tr>
+            <td>&nbsp;</td>
+            <td>VQZBUMWKRITEAHFPGSCNJYDLOX</td>
+            <td>(Scrambler Side)</td>
+        </tr>
+        <tr>
+            <td>Rotor III:</td>
+            <td>ABCDEFGHIJKLMNOPQRSTUVWXYZ</td>
+            <td>(Static Side)</td>
+        </tr>
+        <tr>
+            <td>&nbsp;</td>
+            <td>PHNOXSAYIDCQVMEJRUTZGKBLWF</td>
+            <td>(Scrambler Side)</td>
+        </tr>
+        <tr>
+            <td>Reflector: </td>
+            <td>HQ RE WS LV GY MA FO DJ CX PU ZT IK BN</td>
+            <td>&nbsp;</td>
+        </tr>
+    </table>
+
+        <hr class="vert-sep"/>
+
+        <p>Using the above settings, let's see how the encrypted character 'R' would run through the machine:</p>
+
+    <table class="table table-striped">
+        <tr>
+            <th>Action</th>
+            <th>Rotor I</th>
+            <th>Rotor II</th>
+            <th>Rotor III</th>
+            <th>Reflector</th>
+            <th>Rotor III</th>
+            <th>Rotor II</th>
+            <th>Rotor I</th>
+        </tr>
+        <tbody>
+        <tr>
+            <td>Encrypt 'R'</td>
+            <td>R &gt; K</td>
+            <td>K &gt; T</td>
+            <td>T &gt; Z</td>
+            <td>Z &gt; T</td>
+            <td>T &gt; S</td>
+            <td>S &gt; R</td>
+            <td>R &gt; X</td>
+        </tr>
+        <tr>
+            <td>Decrypt 'X'</td>
+            <td>X &gt; R</td>
+            <td>R &gt; S</td>
+            <td>S &gt; T</td>
+            <td>T &gt; Z</td>
+            <td>Z &gt; T</td>
+            <td>T &gt; K</td>
+            <td>K &gt; R</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <p>As you can see, by its design, the Enigma Machine used the same mechanism to encrypt as well as to decrypt.</p>
+
+        <hr class="vert-sep"/>
+
+        <h5>How Rotors Work</h5>
+
+    <p>As you can see from the above example, each rotor is made up of a static side and a scrambler side.  The static side
+        of each rotor uses the same values from the "Static Wheel", the scrambler side is defined by the Rotor I, II and
+        III values respectively.  The static side of the rotor does not move, it stays static.  However, the scrambler side
+        "rotates" or "steps".  In code, we would step this side by taking the last value and moving it to the head.</p>
+
+    <p>
+        <strong>Example:</strong> <em>Using the example Rotor I from above, if we rotated, or stepped it twice, it would result in the following configuration:</em>
+    </p>
+
+    <table class="table table-striped">
+        <tr>
+            <td>Rotor I:</td>
+            <td>ABCDEFGHIJKLMNOPQRSTUVWXYZ</td>
+            <td>(Static Side)</td>
+        </tr>
+        <tr>
+            <td>&nbsp;</td>
+            <td>SIMOYWDLZCFHVXQATPEKUJNGBR</td>
+            <td>(Scrambler Side)</td>
+        </tr>
+    </table>
+
+        <hr class="vert-sep"/>
+
+
+        <h5>Initial Configuration</h5>
+
+    <p>Before we can start decrypting, we must configure our machine.  Using the "Starting Position" values for each rotor,
+        you need to step that rotor until the "Starting Position" character is at the 0 index of the scrambler side.</p>
+
+    <p>
+        <strong>Example:</strong> <em>Using the example Rotor I from above, if we had a starting position of 'V', we would step the scrambler
+        side until it looked like this:</em>
+    </p>
+
+    <table  class="table table-striped">
+        <tr>
+            <td>Rotor I:</td>
+            <td>ABCDEFGHIJKLMNOPQRSTUVWXYZ</td>
+            <td>(Static Side)</td>
+        </tr>
+        <tr>
+            <td>&nbsp;</td>
+            <td>VXQATPEKUJNGBRSIMOYWDLZCFH</td>
+            <td>(Scrambler Side)</td>
+        </tr>
+    </table>
+
+    <h5>Stepping the Rotors</h5>
+
+    <p>There is one more wrinkle in the Enigma Machine.  You will have noticed the 'Notch' values.  Before each character in
+        an encrypted message is processed, the rotors are stepped using the following logic:</p>
+
+    <ul>
+        <li>Rotor I steps by one position.</li>
+        <li>If Rotor I was on its 'Notch' position (before being stepped), Rotor II also steps.</li>
+        <li>If Rotor II was on its 'Notch' position (before being stepped), Rotor III also steps.</li>
+    </ul>
+
+    <p>Keep in mind that these steps only take place on the scrambler side, not the static side.</p>
+
+        <hr class="vert-sep"/>
+
+        <h5>Checking Your Progress</h5>
+
+    <p>To see if you're on the right track, here is a sample message to run through for debugging (using the actual
+        rotor configurations from the image payload):</p>
+
+    <pre>
+        Decoded Sample:
+
+        Neither a borrower nor a lender be; For loan oft loses both itself and friend, and borrowing dulls the edge of husbandry.
+
+
+        Encoded Sample:
+
+        g|Pl!}1#@U](@9p._s=CD`5`LqwsBC4Bga>Sbn=whfY?Jt)X9Ixw4W\EgQ8OAlq)G\x7%OAQ)AoL)5K^D\Yey[o4b-?7}KD'nc+Rn*5GAIpSXT0VJ%{zk(O+9
+    </pre>
+
+        <hr class="vert-sep"/>
+
+        <p>
+        <strong>HINT:</strong> If you start out correct and then turn to gibberish, you know you are not doing the stepping correctly.
+    </p>
+
+        </div>
+    <div class="well">
+
+
+    <h2>DFTW (Decrypt for the win)</h2>
+
+    <p>
+        If you have written your Enigma Machine correctly, you should now be able to run the encrypted message through, character by character, and unravel
+        the Nazi mystery message.
+    </p>
+
+        </div>
+    <div class="well">
+
+    <h3>BIG IMPORTANT STEP!!! WHEN YOU HAVE THE MESSAGE, EMAIL IT TO <a href="mailto:cweiss@zappos.com">cweiss@zappos.com</a></strong> YOUR SUBMISSION TIME IS WHEN
+    MY MAIL SERVER RECORDS RECEIVING YOUR ENTRY.  IF YOU DON'T EMAIL IT, IT DOESN'T COUNT!!!  AND THERE IS A FIRST AND SECOND PLACE,
+    SO PLEASE DONT SHARE YOUR ANSWER IF YOU ARE FIRST!</h3>
+
+        <hr class="vert-sep"/>
+
+        <p>Glückliche Jagd!</p>
+
+</div>
+
+
+</div> <!-- /container -->
+
+
+<!-- Bootstrap core JavaScript
+================================================== -->
+<script src="//code.jquery.com/jquery-1.11.1.min.js" type="text/javascript"></script>
+<script src = "//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js" type="text/javascript"></script>
+
+
+</body>
+</html>
